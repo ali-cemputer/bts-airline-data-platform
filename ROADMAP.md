@@ -16,20 +16,20 @@ Bu belge, uçtan uca data engineering pipeline'ının tüm adımlarını takip e
 
 ## FAZ 1 — IaC: Cloud Altyapı (Terraform)
 
-- [ ] Terraform proje yapısı kuruldu: `main.tf` · `variables.tf` · `outputs.tf` · `terraform.tfvars`
-- [ ] GCS bucket kaynakları tanımlandı (bronze / silver / gold prefix, versioning, lifecycle)
-- [ ] BigQuery dataset kaynağı tanımlandı (region, expiry)
-- [ ] IAM servis hesabı rolleri tanımlandı (Storage Admin, BQ Admin)
-- [ ] `terraform init → plan → apply` çalıştırıldı, GCP altyapısı doğrulandı
+- [x] Terraform proje yapısı kuruldu: `main.tf` · `variables.tf` · `outputs.tf` · `terraform.tfvars`
+- [x] GCS bucket kaynakları tanımlandı (bronze layer)
+- [x] BigQuery dataset kaynağı tanımlandı (gold layer)
+- [x] IAM servis hesabı rolleri tanımlandı (Storage Admin, BQ Admin)
+- [x] `terraform init → plan → apply` çalıştırıldı, GCP altyapısı doğrulandı
 
 ---
 
 ## FAZ 2 — Data Ingestion Pipeline
 
-- [ ] Airflow için `Dockerfile` yazıldı, `docker-compose.yml`'a airflow + postgres servisleri eklendi
-- [ ] TranStats PREZIP URL'leri keşfedildi, 2023–2024 aylarına ait zip listesi çıkarıldı
-- [ ] CSV extract scripti yazıldı: zip indir → aç → kolonları filtrele → ham CSV kaydet
-- [ ] Lookup tabloları indirildi (Carriers, Airports, CancellationCode), GCS'e yüklendi
+- [x] Airflow için `Dockerfile` yazıldı, `docker-compose.yml`'a airflow + postgres servisleri eklendi
+- [x] TranStats PREZIP URL'leri keşfedildi, 2023–2024-2025 aylarına ait zip listesi çıkarıldı
+- [x] CSV extract scripti yazıldı: zip indir → aç → kolonları filtrele → ham CSV kaydet
+- [x] Lookup tabloları indirildi (Carriers, Airports, CancellationCode), GCS'e yüklendi
 - [ ] CSV → Parquet dönüşümü yapıldı, GCS `bronze/year=/month=/` yapısına yüklendi
 - [ ] Ham veri local PostgreSQL'e yüklendi (Spark testi ve geliştirme için)
 - [ ] Airflow DAG yazıldı: tüm ingestion adımları orchestrate edildi, monthly schedule + backfill desteklendi
