@@ -21,4 +21,4 @@ infra/terraform.tfvars
 infra/terraform.tfstate
 infra/terraform.tfstate.backup
 infra/keys/
-infra/.terraform/
+infra/.terraform/**/.ipynb_checkpoints/
