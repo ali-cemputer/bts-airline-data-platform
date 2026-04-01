@@ -71,10 +71,9 @@ def build_col_defs(df: pd.DataFrame) -> str:
             defs.append(f'"{col}" TEXT')
     return ", ".join(defs)
 
-@click.command()
-@click.option("--year",  required=True, type=int)
-@click.option("--month", required=True, type=int)
-def transform_load_staging(year: int, month: int) -> None:
+
+def run(year: int, month: int) -> None:
+    """Core logic — callable from both CLI and Airflow."""
     table = f"{STAGING_SCHEMA}.{REPORT_TABLE}"
  
     with get_connection() as conn:
@@ -102,6 +101,14 @@ def transform_load_staging(year: int, month: int) -> None:
         conn.commit()
  
     logger.info(f"Loaded {len(df):,} rows into {table}")
+ 
+ 
+@click.command()
+@click.option("--year", required=True, type=int)
+@click.option("--month", required=True, type=int)
+def transform_load_staging(year: int, month: int) -> None:
+    """CLI entry point — delegates to run()."""
+    run(year, month)
  
  
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ infra/keys/
 __pycache__/
 *.pyc
 .venv/
+ingestion/.ipynb_checkpoints/
 
 # Data Dir (Big Data Files) 
 data/
@@ -21,4 +22,4 @@ infra/terraform.tfvars
 infra/terraform.tfstate
 infra/terraform.tfstate.backup
 infra/keys/
-infra/.terraform/**/.ipynb_checkpoints/
+infra/.terraform/

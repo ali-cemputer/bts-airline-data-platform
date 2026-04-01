@@ -1,6 +1,9 @@
 """
 upload_to_gcs.py - Upload local CSV data to GCS bronze layer as Parquet.
-Also handles uploading lookup CSV files to  GCS.
+Also handles uploading lookup CSV files to GCS.
+Usage:
+    python upload_to_gcs.py --year 2023 --month 1
+    python upload_to_gcs.py --upload-lookups
 """
 
 import click
@@ -31,11 +34,8 @@ def get_gcs_client() -> storage.Client:
     return storage.Client.from_service_account_json(GCS_KEY_PATH)
 
 
-@click.command()
-@click.option("--year",  required=True, type=int)
-@click.option("--month", required=True, type=int)
 
-def upload_parquet(year: int, month: int) -> None:
+def run(year: int, month: int) -> None:
     """Read local CSV, convert to Parquet, upload to GCS bronze, delete temp file."""
     csv_path = RAW_DATA_DIR/ str(year) / f"{year}_{month}.csv"
     if not csv_path.exists():
@@ -66,7 +66,7 @@ def upload_parquet(year: int, month: int) -> None:
     finally:
         tmp_path.unlink(missing_ok=True)  # always clean up temp file
 
-def upload_lookups() -> None:
+def run_lookups() -> None:
     """Upload all lookup CSV files from data/lookups/ to GCS bronze/lookups/."""
 
     client = get_gcs_client()
@@ -85,11 +85,18 @@ def upload_lookups() -> None:
 
         logger.info(f"Uploaded lookup → gs://{GCS_BUCKET_NAME}/{gcs_path}")
 
+@click.command()
+@click.option("--year", required=True, type=int)
+@click.option("--month", required=True, type=int)
+def upload_parquet(year: int, month: int) -> None:
+    """CLI entry point for parquet upload — delegates to run()."""
+    run(year, month)
+ 
+ 
 if __name__ == "__main__":
-    import sys
     if "--upload-lookups" in sys.argv:
         sys.argv.remove("--upload-lookups")
-        upload_lookups()
+        run_lookups()
     else:
         upload_parquet()
 

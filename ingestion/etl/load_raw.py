@@ -16,10 +16,9 @@ from utils import get_connection, get_logger
 
 logger=get_logger("load_raw")# Initialize logger for tracking the data loading process
 
-@click.command()
-@click.option('--year',required=True, type=int )
-@click.option('--month',required=True,type=int)
-def load_raw(year, month):
+
+def run(year: int, month: int):
+    """Core logic - callable from both CLI and Airflow"""
     csv_path = RAW_DATA_DIR / str(year) / f"{year}_{month}.csv"
     if not csv_path.exists():
         raise FileNotFoundError(f"CSV not found: {csv_path}. Run extract.py first.")
@@ -38,7 +37,7 @@ def load_raw(year, month):
             col_defs = ", ".join(f'"{col}" TEXT' for col in df.columns)
             cur.execute(f"CREATE TABLE IF NOT EXISTS {table} ({col_defs});")
  
-            # Delete existing rows for this year/month (idempotent)
+            # Delete existing rows for this year/month (idempotency)
             cur.execute(f'DELETE FROM {table} WHERE "Year" = %s AND "Month" = %s;', (str(year), str(month)))
             logger.info(f"Deleted existing rows for {year}-{month:02d}")
  
@@ -51,7 +50,15 @@ def load_raw(year, month):
     logger.info(f"Loaded {len(df):,} rows into {table}")
 
 
-if __name__=="__main__":
+@click.command()
+@click.option("--year", required=True, type=int)
+@click.option("--month", required=True, type=int)
+def load_raw(year, month):
+    """CLI entry point — delegates to run()."""
+    run(year, month)
+ 
+ 
+if __name__ == "__main__":
     load_raw()
 
 
