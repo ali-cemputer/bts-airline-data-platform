@@ -39,7 +39,8 @@ Bu belge, uçtan uca data engineering pipeline'ının tüm adımlarını takip e
 - [x] `ingestion/notebooks/EDA_1.ipynb` ile staging verisi üzerinde data profiling yapıldı
 - [x] CSV → Parquet dönüşümü yapıldı, GCS `bronze/year=/month=/` yapısına yüklendi
 - [x] Ham veri local PostgreSQL'e yüklendi (Spark testi ve geliştirme için)
-- [ ] Airflow DAG yazıldı: tüm ingestion adımları orchestrate edildi, monthly schedule + backfill desteklendi
+- [x] Airflow DAG yazıldı: tüm ingestion adımları orchestrate edildi, monthly schedule + backfill desteklendi
+- [x] 2023-2025 verileri local, postgre, gcs e yüklendi. DAG başarılı şekilde çalıştı.
 
 ---
 
