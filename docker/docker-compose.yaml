@@ -15,7 +15,6 @@ services:
     networks:
       - pipeline-net
     restart: unless-stopped #if container stopped for any reasons, Docker will start it up automatically.
-
   # --- pgAdmin ---
   # Browser based UI to manage PostgreSQL
   pgadmin:
@@ -28,7 +27,6 @@ services:
     restart: unless-stopped
     depends_on:
       - postgres
-
   # --- Airflow Init ---
   # Runs once: initializes the Airflow DB and creates the admin user
   # It stops after finishing - this is expected, not an error
@@ -48,7 +46,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-
   # --- Airflow Webserver ---
   # Serves the Airflow UI at localhost:8080
   airflow-webserver:
@@ -67,12 +64,12 @@ services:
       - ../data:/opt/airflow/data
       - ../infra/keys:/opt/airflow/keys # GCP key is mounted here, not copied into image
       - airflow-logs:/opt/airflow/logs
+      - /var/run/docker.sock:/var/run/docker.sock # allows Airflow to trigger docker run
     networks:
       - pipeline-net
     depends_on:
       - airflow-init
     restart: unless-stopped
-
   # --- Airflow Scheduler ---
   # Watches DAGs and triggers them on schedule — no UI, runs in background
   airflow-scheduler:
@@ -89,17 +86,36 @@ services:
       - ../data:/opt/airflow/data
       - ../infra/keys:/opt/airflow/keys
       - airflow-logs:/opt/airflow/logs
+      - /var/run/docker.sock:/var/run/docker.sock # allows Airflow to trigger docker run
     networks:
       - pipeline-net
     depends_on:
       - airflow-init
     restart: unless-stopped
+  # --- Spark ---
+  # Runs spark-submit jobs triggered by Airflow via docker run
+  # No command here — spark-submit is called from the Airflow DAG
+  spark:
+    build:
+      context: ..          # repo root, so COPY processing/ works in Dockerfile
+      dockerfile: docker/spark/Dockerfile
+    environment:
+      # Hardcoded path — avoids ${VAR} interpolation bug with env_file
+      GOOGLE_APPLICATION_CREDENTIALS: /opt/spark/keys/gcp-key.json
+    volumes:
+      - ../infra/keys:/opt/spark/keys        # directory mount, not single file
+      - ../processing:/opt/spark/processing  # live mount for development
+      - ../data:/opt/spark/data
+    ports:
+      - "4040:4040" # Spark UI — only available while a job is running
+    networks:
+      - pipeline-net
 
 # Named volume — postgres data survives container restarts and removals
 volumes:
   postgres-data:
   airflow-logs:
- 
+
 # All services talk to each other using service names (e.g. postgres:5432), not localhost
 networks:
   pipeline-net:
