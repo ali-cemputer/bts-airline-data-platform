@@ -34,6 +34,8 @@ RUN pip install --no-cache-dir click
 # Copy processing scripts — baked into image at build time
 # For live editing during development, override with a volume mount in compose
 COPY processing/ /opt/spark/processing/
+COPY infra/keys/ /opt/spark/keys/
+COPY data/lookups/ /opt/spark/data/lookups/
 
 # Official spark image default non-root user UID
 USER 185
