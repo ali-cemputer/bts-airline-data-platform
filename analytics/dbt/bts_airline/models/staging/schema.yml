@@ -1,0 +1,32 @@
+version: 2
+
+models:
+  - name: stg_carrier_report
+    description: "Cleaned staging layer over carrier_report_staging"
+    columns:
+      - name: flight_date
+        description: "Scheduled flight date"
+        tests:
+          - not_null
+
+      - name: reporting_airline
+        description: "IATA carrier code"
+        tests:
+          - not_null
+
+      - name: origin
+        description: "Origin airport IATA code"
+        tests:
+          - not_null
+
+      - name: dest
+        description: "Destination airport IATA code"
+        tests:
+          - not_null
+
+      - name: delay_category
+        description: "Bucketed delay label derived in FAZ 3"
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['No Delay', 'Minor', 'Major', 'Severe']

@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: bts_raw
+    database: "{{ env_var('GCP_PROJECT_ID', 'bd-project-cemputer') }}"   # pull .env file
+    schema: bts_airline
+    tables:
+      - name: carrier_performance
+        description: "20.9M rows cleaned flight data"

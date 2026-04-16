@@ -30,3 +30,4 @@ profiles.yml
 analytics/dbt/bts_airline/target/
 analytics/dbt/bts_airline/dbt_packages/
 analytics/dbt/bts_airline/logs/
+logs/

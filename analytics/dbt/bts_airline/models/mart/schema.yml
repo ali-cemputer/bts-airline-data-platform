@@ -1,0 +1,84 @@
+version: 2
+
+models:
+  - name: mart_carrier_performance_trends
+    description: "Monthly airline flight volume, cancellation rates, and delay performance trends."
+    columns:
+      - name: flight_year
+        description: "Flight Year"
+        tests:
+          - not_null
+      - name: flight_month
+        description: "Flight Month"
+        tests:
+          - not_null
+      - name: reporting_airline
+        description: "Airline IATA Code"
+        tests:
+          - not_null
+      - name: total_flights
+        description: "Total number of flights (completed or cancelled)."
+      - name: total_cancelled_flights
+        description: "Number of cancelled flights."
+      - name: cancellation_rate_pct
+        description: "Cancellation rate (%)"
+      - name: avg_dep_delay_mins
+        description: "Average departure delay (Minutes)"
+      - name: avg_arr_delay_mins
+        description: "Average arrival delay (Minutes)"
+      - name: total_on_time_flights
+        description: "Number of on-time (0 minutes) flights."
+      - name: total_minor_delayed
+        description: "Number of flights with 1-15 minutes delay."
+      - name: total_major_delayed
+        description: "Number of flights with 16-60 minutes delay."
+      - name: total_severe_delayed
+        description: "Number of flights with more than 60 minutes delay."
+
+  - name: mart_airport_bottlenecks
+    description: "Departure/arrival traffic volume and taxi/delay bottleneck analysis by airport."
+    columns:
+      - name: airport_code
+        description: "Airport IATA Code"
+        tests:
+          - unique
+          - not_null
+      - name: city_name
+        description: "City where the airport is located"
+      - name: total_departures
+        description: "Total number of flights departing from this airport"
+      - name: total_arrivals
+        description: "Total number of flights arriving at this airport"
+      - name: total_traffic
+        description: "Total volume of departure and arrival flights (Used to find the busiest airport)"
+      - name: avg_taxi_out_mins
+        description: "Average taxi-out time (wait time on the tarmac between gate departure and takeoff)"
+      - name: avg_dep_delay_mins
+        description: "Average departure delay"
+      - name: avg_taxi_in_mins
+        description: "Average taxi-in time (wait time on the tarmac between touchdown and gate arrival)"
+      - name: avg_arr_delay_mins
+        description: "Average arrival delay"
+
+  - name: mart_delay_root_causes
+    description: "Total delay durations and percentage distribution of root causes for airlines, based only on delayed flights."
+    columns:
+      - name: reporting_airline
+        description: "Airline IATA Code"
+        tests:
+          - unique
+          - not_null
+      - name: total_delayed_flights
+        description: "Total number of delayed flights"
+      - name: total_delay_minutes
+        description: "Total delay duration caused by this airline (Minutes)"
+      - name: carrier_delay_pct
+        description: "Percentage of delays caused by the carrier (maintenance, crew, etc.) (%)"
+      - name: weather_delay_pct
+        description: "Percentage of weather-related delays (%)"
+      - name: nas_delay_pct
+        description: "Percentage of delays caused by the National Aviation System (airspace) (%)"
+      - name: security_delay_pct
+        description: "Percentage of security-related delays (%)"
+      - name: late_aircraft_delay_pct
+        description: "Percentage of delays caused by the late arrival of the previous aircraft (%)"
