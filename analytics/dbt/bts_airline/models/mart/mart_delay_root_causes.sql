@@ -12,6 +12,7 @@ with delayed_flights as (
 aggregated_delays as (
     select
         reporting_airline,
+        airline_name,
         count(*) as total_delayed_flights,
         
         -- sum of delay mins
@@ -23,14 +24,15 @@ aggregated_delays as (
         sum(late_aircraft_delay) as total_late_aircraft_delay
         
     from delayed_flights
-    group by reporting_airline
+    group by reporting_airline, airline_name
 )
 
 select
     reporting_airline,
     total_delayed_flights,
     total_delay_minutes,
-    
+    airline_name,
+
     -- We are calculating the "Percentage Distribution" for Streamlit Pie Charts.
     round(safe_divide(total_carrier_delay, total_delay_minutes) * 100, 2) as carrier_delay_pct,
     round(safe_divide(total_weather_delay, total_delay_minutes) * 100, 2) as weather_delay_pct,

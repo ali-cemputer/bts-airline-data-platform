@@ -15,6 +15,7 @@ renamed as (
         origin_city_name,
         dest,
         dest_city_name,
+        airline_name,
 
         -- schedule
         crs_dep_time,
