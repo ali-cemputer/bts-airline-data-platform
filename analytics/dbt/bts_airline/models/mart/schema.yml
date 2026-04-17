@@ -99,7 +99,7 @@ models:
         description: "Total number of flights diverted to another airport"
       - name: diverted_rate_pct
         description: "Percentage of diverted flights (%)"
-        
+
   - name: mart_route_performance
     description: "Flight volume and performance metrics grouped by origin and destination route combinations."
     columns:
@@ -117,3 +117,18 @@ models:
         description: "Average air time between these two airports in minutes"
       - name: cancellation_rate_pct
         description: "Cancellation rate for this specific route (%)"
+
+  - name: mart_airport_detail
+    description: "Comprehensive performance and traffic metrics for each airport."
+    columns:
+      - name: airport_code
+        description: "Airport IATA Code"
+        tests:
+          - unique
+          - not_null
+      - name: city_name
+        description: "City where the airport is located"
+      - name: total_traffic
+        description: "Sum of departures and arrivals"
+      - name: top_carrier
+        description: "The airline code that has the most flights operating from this airport"
