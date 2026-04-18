@@ -9,104 +9,103 @@
 ![Terraform](https://img.shields.io/badge/Terraform-IaC-844FBA?logo=terraform&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 
-Türkçe README dosyası: [docs/tr_README.md](docs/tr_README.md)
+>Türkçe README dosyası: [docs/tr_README.md](docs/tr_README.md)
 
-ABD iç hat uçuş verilerini uçtan uca işleyen, gecikme ve iptal örüntülerini görselleştiren batch data pipeline.
+An end-to-end batch data pipeline that processes US domestic flight data and visualizes delay and cancellation patterns.
 
-ABD'de her yıl milyonlarca iç hat uçuşu gerçekleşiyor; ancak gecikme, iptal ve havalimanı yoğunluk desenlerini ham veri içinden anlamlı hale getirmek zor ve maliyetlidir. Bu proje, BTS/TranStats kaynağından 2023–2025 dönemine ait 20,9 milyon kayıtlık veriyi otomatik indirir, Bronze → Silver → Gold katman mimarisinde işler ve iş metriklerini interaktif bir dashboard ile sunar.
-
+Millions of domestic flights take place in the US every year; however, making sense of delay, cancellation, and airport congestion patterns from raw data is difficult and costly. This project automatically downloads 20.9 million records from BTS/TranStats covering 2023–2025, processes them through a Bronze → Silver → Gold layered architecture, and presents business metrics through an interactive dashboard.
 
 ![Dashboard](docs/doc_images/dashboard.png)
 
 ---
 
-## 1. Proje Amacı
+## 1. Project Objectives
 
-- 2023–2025 yılları arasında 20,9 milyon uçuş kaydını otomatik olarak indirmek ve işlemek
-- Ham veriyi Bronze → Silver → Gold katman mimarisinde dönüştürmek
-- ETL (PostgreSQL) ve ELT (GCS + BigQuery) olmak üzere iki paralel pipeline kurmak
-- Airflow ile aylık schedule ve backfill desteği sağlamak
-- dbt Core ile BigQuery üzerinde analitik mart tabloları oluşturmak
-- Streamlit dashboard ile gecikme, iptal ve havalimanı performansını görselleştirmek
-- Tüm altyapıyı Terraform ile Infrastructure as Code olarak yönetmek
-- Docker Compose ile tek komutla ayağa kalkan reproducible ortam sağlamak
+- Automatically download and process 20.9 million flight records from 2023–2025
+- Transform raw data through a Bronze → Silver → Gold layered architecture
+- Build two parallel pipelines: ETL (PostgreSQL) and ELT (GCS + BigQuery)
+- Enable monthly scheduling and backfill support with Airflow
+- Build analytical mart tables on BigQuery using dbt Core
+- Visualize delay, cancellation, and airport performance through a Streamlit dashboard
+- Manage all infrastructure as code with Terraform
+- Provide a reproducible environment that starts with a single command via Docker Compose
 
 ---
 
-## 2. Veri Kaynağı
+## 2. Data Source
 
 **Bureau of Transportation Statistics (BTS) — TranStats**
 
-- **Kaynak:** ABD Ulaştırma Bakanlığı resmi istatistik portalı
-- **Kapsam:** 1987'den günümüze tüm ABD iç hat ticari uçuşları
-- **Bu projede:** 2023–2025 (36 ay, ~20,9 milyon satır)
-- **Kayıt yapısı:** Her satır bir uçuşu temsil eder
-- **İndirme yöntemi:** `transtats.bts.gov/PREZIP/` adresinden otomatik `requests` ile ZIP indirme
+- **Source:** Official statistics portal of the US Department of Transportation
+- **Coverage:** All US domestic commercial flights from 1987 to present
+- **This project:** 2023–2025 (36 months, ~20.9 million rows)
+- **Record structure:** Each row represents one flight
+- **Download method:** Automatic ZIP download via `requests` from `transtats.bts.gov/PREZIP/`
 
-### Seçilen Kolonlar (28 Kolon)
+### Selected Columns (28 Columns)
 
-100'den fazla kolon arasından pipeline ve analizler için anlamlı olan 28 kolon seçilmiştir.
+28 meaningful columns were selected from over 100 available for the pipeline and analyses.
 
-| Grup | Kolonlar |
+| Group | Columns |
 |---|---|
-| Zaman | Year, Month, DayOfWeek, FlightDate |
-| Havayolu | Reporting_Airline |
-| Kalkış | Origin, OriginCityName, CRSDepTime, DepTime, DepDelay, TaxiOut |
-| Varış | Dest, DestCityName, CRSArrTime, ArrTime, ArrDelay, TaxiIn |
-| İptal / Yönlendirme | Cancelled, CancellationCode, Diverted |
-| Özet | ActualElapsedTime, AirTime, Distance |
-| Gecikme Nedeni | CarrierDelay, WeatherDelay, NASDelay, SecurityDelay, LateAircraftDelay |
+| Time | Year, Month, DayOfWeek, FlightDate |
+| Airline | Reporting_Airline |
+| Departure | Origin, OriginCityName, CRSDepTime, DepTime, DepDelay, TaxiOut |
+| Arrival | Dest, DestCityName, CRSArrTime, ArrTime, ArrDelay, TaxiIn |
+| Cancellation / Diversion | Cancelled, CancellationCode, Diverted |
+| Summary | ActualElapsedTime, AirTime, Distance |
+| Delay Cause | CarrierDelay, WeatherDelay, NASDelay, SecurityDelay, LateAircraftDelay |
 
-Kolon açıklamaları için: [`docs/data_desc_eng.md`](docs/data_desc_eng.md)
+For column descriptions: [`docs/data_desc_eng.md`](docs/data_desc_eng.md)
 
-### Lookup Tabloları
+### Lookup Tables
 
-| Dosya | İçerik |
+| File | Content |
 |---|---|
-| `L_UNIQUE_CARRIERS.csv` | Havayolu kodu → tam isim |
-| `L_AIRPORT.csv` | Havalimanı kodu → şehir, eyalet |
-| `L_CANCELLATION.csv` | İptal kodu → neden (A=Carrier, B=Weather, C=NAS, D=Security) |
+| `L_UNIQUE_CARRIERS.csv` | Airline code → full name |
+| `L_AIRPORT.csv` | Airport code → city, state |
+| `L_CANCELLATION.csv` | Cancellation code → reason (A=Carrier, B=Weather, C=NAS, D=Security) |
 
-### Veri Linkleri
+### Data Links
 
-- Ana veri sayfası: https://transtats.bts.gov/DL_SelectFields.aspx?gnoyr_VQ=FGJ&QO_fu146_anzr=b0-gvzr
-- Veri zip sayfası: https://transtats.bts.gov/PREZIP/
+- Main data page: https://transtats.bts.gov/DL_SelectFields.aspx?gnoyr_VQ=FGJ&QO_fu146_anzr=b0-gvzr
+- Data ZIP page: https://transtats.bts.gov/PREZIP/
 
 ---
 
 ## 3. Tech Stack
 
-| Katman | Teknoloji | Amaç |
+| Layer | Technology | Purpose |
 |---|---|---|
-| Altyapı | Terraform | GCS bucket, BigQuery dataset, IAM provision |
-| Konteynerizasyon | Docker + Docker Compose | Tüm servisleri tek ağda yönetmek |
-| Paket Yönetimi | uv | Python bağımlılık yönetimi, lock file |
-| Orchestration | Apache Airflow 2.11 | DAG tabanlı pipeline yönetimi, backfill |
-| Veri Depolama | GCP Cloud Storage | Bronze ve Silver Parquet dosyaları |
-| Veri Ambarı | GCP BigQuery | Partition + cluster ile analitik sorgular |
-| Batch Processing | Apache Spark 3.5 | GCS bronze → silver dönüşümü |
-| Transformasyon | dbt Core | BigQuery mart modelleri ve testler |
-| Lokal Veritabanı | PostgreSQL | ETL kolu için local data lake |
-| DB Yönetimi | pgAdmin + pgcli | PostgreSQL görsel ve terminal yönetimi |
-| Dashboard | Streamlit | BigQuery mart tabloları üzerinden görselleştirme |
-| Görselleştirme | Plotly | İnteraktif grafikler |
-| Versiyon Kontrolü | Git + GitHub | Kod yönetimi |
+| Infrastructure | Terraform | GCS bucket, BigQuery dataset, IAM provisioning |
+| Containerization | Docker + Docker Compose | Managing all services on a single network |
+| Package Management | uv | Python dependency management, lock file |
+| Orchestration | Apache Airflow 2.11 | DAG-based pipeline management, backfill |
+| Data Storage | GCP Cloud Storage | Bronze and Silver Parquet files |
+| Data Warehouse | GCP BigQuery | Analytical queries with partition + cluster |
+| Batch Processing | Apache Spark 3.5 | GCS bronze → silver transformation |
+| Transformation | dbt Core | BigQuery mart models and tests |
+| Local Database | PostgreSQL | Local data lake for the ETL pipeline |
+| DB Management | pgAdmin + pgcli | PostgreSQL visual and terminal management |
+| Dashboard | Streamlit | Visualization over BigQuery mart tables |
+| Visualization | Plotly | Interactive charts |
+| Version Control | Git + GitHub | Code management |
 
 ---
 
-## 4. Mimari Akış
+## 4. Architecture
 
-### Genel Sistem Mimarisi
+### Overall System Architecture
 
 ```mermaid
 flowchart TD
-    A[TranStats PREZIP] -->|requests ile ZIP indir| B[Local CSV\ndata/raw/]
-    B -->|ETL Kolu| C[PostgreSQL\nraw.carrier_report]
+    A[TranStats PREZIP] -->|download ZIP via requests| B[Local CSV\ndata/raw/]
+    B -->|ETL Pipeline| C[PostgreSQL\nraw.carrier_report]
     C -->|Pandas transform| D[PostgreSQL\nstaging.carrier_report]
-    B -->|ELT Kolu| E[GCS Bronze\nParquet - Hive partition]
-    E -->|PySpark| F[GCS Silver\nParquet - temizlenmiş]
+    B -->|ELT Pipeline| E[GCS Bronze\nParquet - Hive partition]
+    E -->|PySpark| F[GCS Silver\nParquet - cleaned]
     F -->|BQ Connector| G[BigQuery\ncarrier_performance\npartition + cluster]
-    G -->|dbt Core| H[BigQuery\nbts_dbt mart tabloları]
+    G -->|dbt Core| H[BigQuery\nbts_dbt mart tables]
     H -->|Streamlit| I[Dashboard\nlocalhost:8501]
     J[Terraform] -->|provision| K[GCS Bucket + BQ Dataset + IAM]
     L[Airflow] -->|orchestrate| B
@@ -114,7 +113,7 @@ flowchart TD
     L -->|orchestrate| F
 ```
 
-### Airflow DAG Akışı
+### Airflow DAG Flow
 
 ```mermaid
 flowchart LR
@@ -126,23 +125,23 @@ flowchart LR
     subgraph bts_processing_dag["bts_processing_dag (monthly)"]
         S1[spark_transform]
     end
-    bts_ingestion_dag -->|upstream tamamlandı| bts_processing_dag
+    bts_ingestion_dag -->|upstream completed| bts_processing_dag
 ```
 
-### Bronze / Silver / Gold Katman Mimarisi
+### Bronze / Silver / Gold Layer Architecture
 
 ```mermaid
 flowchart LR
-    subgraph BRONZE["🥉 Bronze — Ham Veri"]
-        B1[GCS bronze/\nHam Parquet]
-        B2[PostgreSQL raw\nHam CSV]
+    subgraph BRONZE["🥉 Bronze — Raw Data"]
+        B1[GCS bronze/\nRaw Parquet]
+        B2[PostgreSQL raw\nRaw CSV]
     end
-    subgraph SILVER["🥈 Silver — Temizlenmiş"]
-        S1[GCS silver/\nTemizlenmiş Parquet]
+    subgraph SILVER["🥈 Silver — Cleaned"]
+        S1[GCS silver/\nCleaned Parquet]
         S2[PostgreSQL staging\nPandas transform]
         S3[BigQuery\ncarrier_performance]
     end
-    subgraph GOLD["🥇 Gold — Analitik"]
+    subgraph GOLD["🥇 Gold — Analytical"]
         G1[mart_delay_by_carrier]
         G2[mart_delay_root_causes]
         G3[mart_airport_bottlenecks]
@@ -163,133 +162,133 @@ flowchart LR
 
 ---
 
-## 5. Veri Katmanları
+## 5. Data Layers
 
-| Katman | Nerede | Format | Açıklama |
+| Layer | Location | Format | Description |
 |---|---|---|---|
-| **Bronze** | GCS `bronze/carrier_report/year=/month=/` | Parquet (Hive partition) | Ham veri, hiç dokunulmamış |
-| **Bronze** | PostgreSQL `raw.carrier_report` | Tablo (TEXT kolonlar) | ETL kolu için ham landing zone |
-| **Silver** | GCS `silver/carrier_report/year=/month=/` | Parquet | PySpark ile temizlenmiş, tip dönüşümü yapılmış |
-| **Silver** | PostgreSQL `staging.carrier_report` | Tablo | Pandas transform, ETL kolu staging |
-| **Silver** | BigQuery `bts_airline.carrier_performance` | Partitioned + Clustered tablo | `flight_date` partition, `reporting_airline` + `origin` cluster |
-| **Gold** | BigQuery `bts_dbt.*` | Materialized table | 6 dbt mart modeli |
+| **Bronze** | GCS `bronze/carrier_report/year=/month=/` | Parquet (Hive partition) | Raw data, untouched |
+| **Bronze** | PostgreSQL `raw.carrier_report` | Table (TEXT columns) | Raw landing zone for ETL pipeline |
+| **Silver** | GCS `silver/carrier_report/year=/month=/` | Parquet | Cleaned and type-cast via PySpark |
+| **Silver** | PostgreSQL `staging.carrier_report` | Table | Pandas transform, ETL pipeline staging |
+| **Silver** | BigQuery `bts_airline.carrier_performance` | Partitioned + Clustered table | `flight_date` partition, `reporting_airline` + `origin` cluster |
+| **Gold** | BigQuery `bts_dbt.*` | Materialized table | 6 dbt mart models |
 
-### BigQuery Optimizasyon Kararları
+### BigQuery Optimization Decisions
 
-- **Partition:** `flight_date` kolonuna göre — dbt mart modelleri belirli tarih aralıklarını sorgularken tüm tabloyu taramaz, maliyet ve süre düşer
-- **Cluster:** `reporting_airline`, `origin` — en sık filtrelenen kolonlar üzerinde sorgu maliyetini düşürür
+- **Partition:** By `flight_date` column — dbt mart models scan only relevant partitions when querying specific date ranges, reducing cost and query time
+- **Cluster:** `reporting_airline`, `origin` — reduces query cost on the most frequently filtered columns
 
 ---
 
-## 6. dbt Mart Tabloları
+## 6. dbt Mart Tables
 
-dbt Core ile BigQuery üzerinde 6 analitik mart tablosu üretilmiştir. Tüm modeller `materialized='table'` olarak tanımlanmış olup Streamlit dashboard bu tablolardan beslenmektedir.
+6 analytical mart tables have been built on BigQuery using dbt Core. All models are defined as `materialized='table'` and the Streamlit dashboard is fed from these tables.
 
-| Tablo | Granularity | Yanıtladığı Soru |
+| Table | Granularity | Question Answered |
 |---|---|---|
-| `mart_delay_by_carrier` | Yıl + Ay + Havayolu | Kim ne zaman ne kadar gecikti? İptal oranı nedir? |
-| `mart_delay_root_causes` | Havayolu | Gecikmelerin kaynağı carrier mı, weather mı, NAS mı? |
-| `mart_airport_bottlenecks` | Havalimanı | Hangi havalimanı darboğaz yaratıyor? Taxi süreleri? |
-| `mart_flights_by_carrier` | Havayolu | Toplam uçuş hacmi ve diversion oranı nedir? |
-| `mart_route_performance` | Origin + Dest | En yoğun rotalar neler? İptal ve gecikme oranları? |
-| `mart_airport_detail` | Havalimanı | Kalkış ve varış perspektifinden havalimanı metrikleri |
+| `mart_delay_by_carrier` | Year + Month + Airline | Who delayed how much and when? What is the cancellation rate? |
+| `mart_delay_root_causes` | Airline | Is the delay cause carrier, weather, or NAS? |
+| `mart_airport_bottlenecks` | Airport | Which airport creates bottlenecks? What are the taxi times? |
+| `mart_flights_by_carrier` | Airline | What is the total flight volume and diversion rate? |
+| `mart_route_performance` | Origin + Dest | What are the busiest routes? Cancellation and delay rates? |
+| `mart_airport_detail` | Airport | Airport metrics from departure and arrival perspectives |
 
-dbt testleri: `not_null`, `unique`, `accepted_values` — tüm modeller `dbt test` ile doğrulanmıştır.
+dbt tests: `not_null`, `unique`, `accepted_values` — all models validated with `dbt test`.
 
 ---
 
 ## 7. Dashboard
 
-Streamlit ile geliştirilmiş interaktif dashboard, BigQuery mart tablolarını direkt sorgular. `@st.cache_data(ttl=3600)` ile sorgu sonuçları önbelleğe alınır. Sayfa üstündeki yıl filtresi (2023 / 2024 / 2025) ilgili tile'ları dinamik olarak günceller.
+The interactive dashboard built with Streamlit queries BigQuery mart tables directly. Query results are cached with `@st.cache_data(ttl=3600)`. The year filter at the top of the page (2023 / 2024 / 2025) dynamically updates the relevant tiles.
 
-### KPI Kartları (sayfa başı)
+### KPI Cards (page header)
 
-Tüm yılları kapsayan 4 özet metrik:
+4 summary metrics covering all years:
 
-- Toplam uçuş sayısı
-- Genel gecikme oranı (%)
-- Genel iptal oranı (%)
-- En kötü performanslı havayolu (ortalama varış gecikmesine göre)
+- Total number of flights
+- Overall delay rate (%)
+- Overall cancellation rate (%)
+- Worst performing airline (by average arrival delay)
 
-### Tile 1 — Gecikme Nedeni Dağılımı *(kategorik)*
+### Tile 1 — Delay Root Cause Distribution *(categorical)*
 
-**Kaynak:** `mart_delay_root_causes`
+**Source:** `mart_delay_root_causes`
 
-Havayolu bazında gecikme nedenlerinin yüzdesel dağılımı. Her bar bir havayolunu, renkler gecikme nedenini temsil eder: Carrier, Weather, NAS, Security, Late Aircraft. Havayolları toplam gecikmiş uçuş sayısına göre azalan sırada sıralanır.
+Percentage distribution of delay causes by airline. Each bar represents an airline, colors represent delay causes: Carrier, Weather, NAS, Security, Late Aircraft. Airlines are sorted in descending order by total delayed flights.
 
-### Tile 2 — Aylık Gecikme ve İptal Trendi *(temporal)*
+### Tile 2 — Monthly Delay and Cancellation Trend *(temporal)*
 
-**Kaynak:** `mart_delay_by_carrier`
+**Source:** `mart_delay_by_carrier`
 
-Seçilen yılın 12 ayı boyunca aylık gecikme oranı ve iptal oranının trendi. Yan yana iki line chart — ölçek farkından kaynaklanan yanıltıcı dual-axis görünümünü önlemek için ayrıştırılmıştır.
+Trend of monthly delay rate and cancellation rate across the 12 months of the selected year. Two side-by-side line charts — separated to avoid misleading dual-axis display due to scale differences.
 
-### Tile 3 — Havayolu Uçuş Hacmi ve Diversion
+### Tile 3 — Airline Flight Volume and Diversion
 
-**Kaynak:** `mart_flights_by_carrier`
+**Source:** `mart_flights_by_carrier`
 
-Havayolu bazında toplam uçuş hacmi ve diversion (yönlendirme) oranı. Yan yana iki bar chart; hover üzerinde havayolunun tam adı görünür.
+Total flight volume and diversion rate by airline. Two side-by-side bar charts; hovering shows the full airline name.
 
-### Tile 4 — Top 10 Havalimanı Performansı
+### Tile 4 — Top 10 Airport Performance
 
-**Kaynak:** `mart_airport_detail`
+**Source:** `mart_airport_detail`
 
-Toplam trafiğe göre ilk 10 havalimanı. `avg_arr_delay_mins` kolonuna göre ısı renkli tablo (kırmızı = kötü performans) ve yatay bar chart yan yana gösterilir. Görüntülenen metrikler: havalimanı kodu, şehir, toplam trafik, ortalama taxi-out, ortalama varış gecikmesi, dominant havayolu.
+Top 10 airports by total traffic. Heat-colored table by `avg_arr_delay_mins` (red = poor performance) and a horizontal bar chart displayed side by side. Metrics shown: airport code, city, total traffic, average taxi-out, average arrival delay, dominant airline.
 
-### Tile 5 — Rota Performans Tablosu
+### Tile 5 — Route Performance Table
 
-**Kaynak:** `mart_route_performance`
+**Source:** `mart_route_performance`
 
-Origin havalimanı seçimine göre filtrelenmiş en yoğun 20 rota. Her rota için ortalama hava süresi, iptal oranı, ortalama kalkış ve varış gecikmesi gösterilir.
+Top 20 routes filtered by origin airport selection. Each route shows average air time, cancellation rate, average departure and arrival delay.
 
-### Tile 6 — Havalimanı Detay Karnesı
+### Tile 6 — Airport Detail Scorecard
 
-**Kaynak:** `mart_airport_detail`
+**Source:** `mart_airport_detail`
 
-Selectbox ile seçilen havalimanına ait 9 metrik kart olarak sunulur: toplam kalkış, toplam varış, toplam trafik, ortalama taxi-out, ortalama taxi-in, ortalama kalkış gecikmesi, ortalama varış gecikmesi, toplam diversion sayısı, dominant havayolu.
+9 metrics presented as cards for the selected airport via selectbox: total departures, total arrivals, total traffic, average taxi-out, average taxi-in, average departure delay, average arrival delay, total diversions, dominant airline.
 
 ---
 
-## 8. Proje Yapısı
+## 8. Project Structure
 
 ```text
 bd_project/
-├── analytics/                         # Analitik katman ve dashboard kodları
+├── analytics/                         # Analytics layer and dashboard code
 │   ├── dbt/
-│   │   └── bts_airline/               # dbt Core projesi
-│   │       ├── dbt_project.yml        # dbt konfigürasyonu, materyalizasyon ayarları
+│   │   └── bts_airline/               # dbt Core project
+│   │       ├── dbt_project.yml        # dbt configuration, materialization settings
 │   │       └── models/
 │   │           ├── staging/           # stg_carrier_report (VIEW)
-│   │           └── mart/              # 6 analitik mart tablosu (TABLE)
+│   │           └── mart/              # 6 analytical mart tables (TABLE)
 │   └── streamlit/
 │       └── app.py                     # Streamlit dashboard
 ├── data/
-│   ├── lookups/                       # Havayolu, havalimanı, iptal kodu lookup CSV'leri
-│   ├── raw/                           # İndirilen ham CSV'ler — gitignore'da
-│   └── sample/                        # EDA için örnek veri
+│   ├── lookups/                       # Airline, airport, cancellation code lookup CSVs
+│   ├── raw/                           # Downloaded raw CSVs — gitignored
+│   └── sample/                        # Sample data for EDA
 ├── docker/
 │   ├── airflow/
-│   │   └── Dockerfile                 # Airflow custom image (google provider dahil)
+│   │   └── Dockerfile                 # Airflow custom image (google provider included)
 │   ├── spark/
-│   │   └── Dockerfile                 # Spark image (GCS + BQ connector JAR'ları dahil)
+│   │   └── Dockerfile                 # Spark image (GCS + BQ connector JARs included)
 │   ├── streamlit/
 │   │   └── Dockerfile                 # Streamlit container
-│   └── docker-compose.yaml            # Tüm servisler tek ağda: airflow, postgres, pgadmin, spark, streamlit
+│   └── docker-compose.yaml            # All services on one network: airflow, postgres, pgadmin, spark, streamlit
 ├── docs/
-│   ├── doc_images/					   # README file için ekran görüntüleri
-│   │   └── image.png                  
-│   ├── data_desc_eng.md               # 28 kolonun İngilizce açıklamaları
-│   ├── data_desc_tr.md                # 28 kolonun Türkçe açıklamaları
-│	└── tr_README.md				   # Türkçe README dosyası
+│   ├── doc_images/                    # Screenshots for README
+│   │   └── image.png
+│   ├── data_desc_eng.md               # English descriptions of 28 columns
+│   ├── data_desc_tr.md                # Turkish descriptions of 28 columns
+│   └── tr_README.md                   # Turkish README
 ├── infra/
-│   ├── keys/                          # GCP servis hesabı JSON key — gitignore'da
-│   ├── main.tf                        # GCS bucket, BigQuery dataset, IAM kaynakları
-│   ├── variables.tf                   # Terraform değişken tanımları
-│   ├── outputs.tf                     # Apply sonrası çıktılar
-│	├──terraform.tfvars				   # Değişkenler (gitignore'da)
-│   └── terraform.tfvars.example       # Değişken şablonu
+│   ├── keys/                          # GCP service account JSON key — gitignored
+│   ├── main.tf                        # GCS bucket, BigQuery dataset, IAM resources
+│   ├── variables.tf                   # Terraform variable definitions
+│   ├── outputs.tf                     # Outputs after apply
+│   ├── terraform.tfvars               # Variable values (gitignored)
+│   └── terraform.tfvars.example       # Variable template
 ├── ingestion/
-│   ├── config.py                      # Ortak sabitler: URL şablonu, kolon listesi, DB config
-│   ├── utils.py                       # get_connection(), get_logger() yardımcıları
+│   ├── config.py                      # Shared constants: URL template, column list, DB config
+│   ├── utils.py                       # get_connection(), get_logger() helpers
 │   ├── dags/
 │   │   ├── bts_ingestion_dag.py       # ETL + ELT orchestration DAG (monthly, backfill)
 │   │   └── bts_processing_dag.py      # Spark processing DAG
@@ -300,174 +299,174 @@ bd_project/
 │   ├── elt/
 │   │   └── upload_to_gcs.py           # CSV → GCS bronze (Parquet, Hive partition)
 │   └── notebooks/
-│       └── EDA_1.ipynb                # Veri keşif analizi
+│       └── EDA_1.ipynb                # Exploratory data analysis
 ├── processing/
-│   ├── config.py                      # Spark + GCS + BigQuery sabitleri
-│   ├── spark_transform.py             # GCS bronze → silver + BigQuery yükleme
-│   └── utils.py                       # Spark yardımcı fonksiyonlar
-├── .env.example                       # Ortam değişkeni şablonu — kopyalayıp .env olarak doldur
+│   ├── config.py                      # Spark + GCS + BigQuery constants
+│   ├── spark_transform.py             # GCS bronze → silver + BigQuery load
+│   └── utils.py                       # Spark helper functions
+├── .env.example                       # Environment variable template — copy and fill as .env
 ├── .gitignore
-├── pyproject.toml                     # uv ile Python bağımlılık yönetimi
-├── uv.lock                            # Kilitli bağımlılık ağacı
-├── ROADMAP.md                         # Faz bazlı geliştirme yol haritası
+├── pyproject.toml                     # Python dependency management with uv
+├── uv.lock                            # Locked dependency tree
+├── ROADMAP.md                         # Phase-based development roadmap
 └── README.md
 ```
 
 ---
 
-## 9. Hızlı Başlangıç
+## 9. Quick Start
 
-### Gereksinimler
+### Requirements
 
-- Docker ve Docker Compose
-- Python 3.11+ ve [uv](https://docs.astral.sh/uv/)
-- GCP hesabı (servis hesabı + JSON key)
+- Docker and Docker Compose
+- Python 3.11+ and [uv](https://docs.astral.sh/uv/)
+- GCP account (service account + JSON key)
 - Terraform
 
-### Kurulum Adımları
+### Setup Steps
 
 ```bash
-# 1. Repo'yu klonla
+# 1. Clone the repo
 git clone <repo-url>
 cd bd_project
 
-# 2. Python ortamını kur
+# 2. Set up Python environment
 uv sync
 
-# 3. dbt'yi kur (izole ortamda — bağımlılık çakışmalarını önler)
+# 3. Install dbt (isolated environment — prevents dependency conflicts)
 uv tool install dbt-core --with dbt-bigquery
 
-# 4. Ortam değişkenlerini ayarla
+# 4. Configure environment variables
 cp .env.example .env
-# .env dosyasını düzenle:
+# Edit .env:
 # POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
 # PGADMIN_DEFAULT_EMAIL, PGADMIN_DEFAULT_PASSWORD
-# AIRFLOW_UID (Linux: id -u komutuyla al)
+# AIRFLOW_UID (Linux: get with id -u command)
 # AIRFLOW__CORE__FERNET_KEY
 # AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
 # GCP_PROJECT_ID, GCS_BUCKET_NAME, BQ_DATASET
 # GOOGLE_APPLICATION_CREDENTIALS=/app/keys/gcp-key.json
 
-# 5. GCP servis hesabı JSON key'ini yerleştir
+# 5. Place GCP service account JSON key
 mkdir -p infra/keys
 cp /path/to/your/gcp-key.json infra/keys/gcp-key.json
 
-# 6. GCP altyapısını Terraform ile kur
+# 6. Provision GCP infrastructure with Terraform
 cd infra
 cp terraform.tfvars.example terraform.tfvars
-# terraform.tfvars dosyasını düzenle
+# Edit terraform.tfvars
 terraform init
 terraform apply
 cd ..
 
-# 7. Docker servislerini ayağa kaldır
+# 7. Start Docker services
 docker compose -f docker/docker-compose.yaml up -d --build
 
-# 8. PostgreSQL şemalarını oluştur (ilk kurulumda bir kez)
+# 8. Create PostgreSQL schemas (once, on first setup)
 pgcli -h localhost -p 5432 -U <POSTGRES_USER> -d <POSTGRES_DB>
-# pgcli içinde:
+# Inside pgcli:
 # CREATE SCHEMA raw;
 # CREATE SCHEMA staging;
 
-# 9. Airflow UI'dan pipeline'ı başlat
+# 9. Start pipeline from Airflow UI
 # http://localhost:8080 → admin / admin
 # bts_ingestion_dag → Enable → Backfill (2023-01-01 → 2025-12-01)
 # bts_processing_dag → Enable → Backfill
 
-# 10. dbt mart modellerini oluştur
+# 10. Build dbt mart models
 cd analytics/dbt/bts_airline
 dbt run
 dbt test
 cd ../../..
 
-# 11. Dashboard'a eriş
+# 11. Access the dashboard
 # http://localhost:8501
 ```
 
-### Servis Adresleri
+### Service Addresses
 
-| Servis | Adres | Kullanıcı |
+| Service | Address | Credentials |
 |---|---|---|
 | Airflow UI | http://localhost:8080 | admin / admin |
-| pgAdmin | http://localhost:5050 | .env'deki değerler |
+| pgAdmin | http://localhost:5050 | values from .env |
 | Streamlit | http://localhost:8501 | — |
-| Spark UI | http://localhost:4040 | — (job çalışırken) |
+| Spark UI | http://localhost:4040 | — (while job is running) |
 
-### Notlar
+### Notes
 
-- `data/raw/` ve `infra/keys/` `.gitignore`'dadır — repoda bulunmaz
-- `airflow-init` servisi ilk çalıştırmada DB'yi hazırlar ve durur — bu beklenen davranıştır
-- Backfill ~36 Airflow run tetikler, tamamlanması zaman alabilir
-- Spark job'ları `local[*]` modda tüm CPU core'larını kullanır
+- `data/raw/` and `infra/keys/` are in `.gitignore` — not included in the repo
+- The `airflow-init` service prepares the DB on first run and stops — this is expected behavior
+- Backfill triggers ~36 Airflow runs, which may take some time to complete
+- Spark jobs use all CPU cores in `local[*]` mode
 
 ---
 
-## 10. Faz Bazlı Geliştirme
+## 10. Phase-Based Development
 
-Proje 6 fazda geliştirildi:
+The project was developed in 6 phases:
 
-| Faz | Kapsam |
+| Phase | Scope |
 |---|---|
-| FAZ 0 | Repo, klasör yapısı, uv ortamı, .env şablonu |
-| FAZ 1 | Terraform ile GCP altyapısı (GCS, BigQuery, IAM) |
-| FAZ 2 | Docker kurulumu, ETL + ELT pipeline scriptleri, Airflow DAG |
-| FAZ 3 | PySpark ile GCS bronze → silver dönüşümü, BigQuery yükleme |
-| FAZ 4 | dbt Core ile mart modelleri ve testler |
-| FAZ 5 | Streamlit dashboard, Docker entegrasyonu |
+| PHASE 0 | Repo, folder structure, uv environment, .env template |
+| PHASE 1 | GCP infrastructure with Terraform (GCS, BigQuery, IAM) |
+| PHASE 2 | Docker setup, ETL + ELT pipeline scripts, Airflow DAG |
+| PHASE 3 | GCS bronze → silver transformation with PySpark, BigQuery load |
+| PHASE 4 | dbt Core mart models and tests |
+| PHASE 5 | Streamlit dashboard, Docker integration |
 
-> Faz bazlı ayrıntılı geliştirme dokümantasyonu (proje geliştirme aşamasında paralel olarak hazırladığım türkçe dilindeki aşamalar.): [docs/project_phases.md](docs/project_phases.md)
-
----
-
-## 11. Branch Stratejisi
-
-- `main`: Stabil, tamamlanan fazlar
-- `dev`: Aktif geliştirme
-- Faz bazlı commit'ler: `feat:`, `chore:`, `fix:`, `docs:` prefix ile
-- Örnek: `feat: add pyspark transformation pipeline from GCS bronze to silver`
+> Detailed phase-by-phase development documentation (prepared in Turkish during development): [docs/project_phases.md](docs/project_phases.md)
 
 ---
 
-## 12. Bilinen Sorunlar
+## 11. Branch Strategy
 
-| Sorun | Çözüm |
+- `main`: Stable, completed phases
+- `dev`: Active development
+- Phase-based commits with prefixes: `feat:`, `chore:`, `fix:`, `docs:`
+- Example: `feat: add pyspark transformation pipeline from GCS bronze to silver`
+
+---
+
+## 12. Known Issues
+
+| Issue | Solution |
 |---|---|
-| WSL2 + ADC credential çakışması — `authorized_user` tipi metadata server'a düşüyordu | Servis hesabı JSON key ile değiştirildi |
-| Docker volume interpolasyonu — `${VAR}` compose'da `env_file`'dan önce resolve ediliyordu | Volume path'leri hardcode yazıldı |
-| Spark BigQuery connector — `curl` redirect takip etmeyince 0 byte JAR indiriyordu | `curl -fL` ile çözüldü |
-| dbt dependency hell — ana ortam ile `dbt-bigquery` sürümleri çakıştı | `uv tool install` ile izole ortam kuruldu |
-| Airflow → Docker socket — container'dan `docker run` çağırmak için `docker-ce-cli` gerekti | Airflow Dockerfile'a eklendi, socket mount yapıldı |
+| WSL2 + ADC credential conflict — `authorized_user` type was falling through to metadata server | Replaced with service account JSON key |
+| Docker volume interpolation — `${VAR}` in compose was resolved before `env_file` | Volume paths hardcoded |
+| Spark BigQuery connector — `curl` without redirect following downloaded 0-byte JAR | Fixed with `curl -fL` |
+| dbt dependency hell — main environment and `dbt-bigquery` versions conflicted | Isolated environment created with `uv tool install` |
+| Airflow → Docker socket — `docker-ce-cli` required to call `docker run` from container | Added to Airflow Dockerfile, socket mount configured |
 
-> Ayrıntılı hata dokümantasyonu ve çözüm adımları ilerleyen süreçte eklenecektir.
-
----
-
-## 13. Gelecekte Yapılacaklar
-
-- [ ] CI/CD pipeline — GitHub Actions ile dbt test + Terraform plan otomasyonu
-- [ ] Harita tile'ı — Streamlit'e havalimanı bazında coğrafi görselleştirme
-- [ ] dbt snapshot ile Slowly Changing Dimension desteği
-- [ ] Great Expectations ile veri kalite kontrolleri
-- [ ] Makefile ile tek komut kurulum
-- [ ] Unit testler — Airflow DAG'ları ve Spark transform için
-- [ ] GCP Dataproc ile production-grade Spark cluster geçişi
+> Detailed error documentation and resolution steps will be added in the future.
 
 ---
 
-## 14. DataTalks DE Zoomcamp Değerlendirme Kriterleri
+## 13. Future Work
 
-| Kriter | Puan | Karşılama |
+- [ ] CI/CD pipeline — automated dbt test + Terraform plan with GitHub Actions
+- [ ] Map tile — geographic visualization by airport in Streamlit
+- [ ] Slowly Changing Dimension support with dbt snapshots
+- [ ] Data quality checks with Great Expectations
+- [ ] Single-command setup with Makefile
+- [ ] Unit tests — for Airflow DAGs and Spark transform
+- [ ] Migration to production-grade Spark cluster with GCP Dataproc
+
+---
+
+## 14. DataTalks DE Zoomcamp Evaluation Criteria
+
+| Criterion | Score | How It's Met |
 |---|---|---|
-| Problem tanımı | 4/4 | Proje amacı, veri kaynağı ve pipeline hedefleri net tanımlanmıştır |
-| Cloud + IaC | 4/4 | GCP (GCS + BigQuery), Terraform ile provision edilmiştir |
-| Batch pipeline / Orchestration | 4/4 | Airflow DAG, çoklu task, GCS'e veri yükleme, monthly schedule + backfill |
-| Data Warehouse | 4/4 | BigQuery tabloları FlightDate partition + Airline/Origin cluster ile optimize edilmiştir |
-| Transformasyon | 4/4 | PySpark (bronze→silver) ve dbt Core (mart modelleri) kullanılmıştır |
-| Dashboard | 4/4 | Streamlit: kategorik (gecikme nedeni) + temporal (aylık trend) tile'ları mevcuttur |
-| Reproducibility | 4/4 | Kurulum adımları, `.env.example`, docker-compose, `terraform.tfvars.example` mevcuttur |
+| Problem description | 4/4 | Project objectives, data source, and pipeline goals are clearly defined |
+| Cloud + IaC | 4/4 | GCP (GCS + BigQuery) provisioned with Terraform |
+| Batch pipeline / Orchestration | 4/4 | Airflow DAG with multiple tasks, data upload to data lake, monthly schedule + backfill |
+| Data Warehouse | 4/4 | BigQuery tables optimized with FlightDate partition + Airline/Origin cluster |
+| Transformations | 4/4 | PySpark (bronze→silver) and dbt Core (mart models) used |
+| Dashboard | 4/4 | Streamlit: categorical (delay cause) + temporal (monthly trend) tiles present |
+| Reproducibility | 4/4 | Setup steps, `.env.example`, docker-compose, `terraform.tfvars.example` all provided |
 
 ---
 
-## 15. Lisans
+## 15. License
 
-MIT License — ayrıntılar için `LICENSE` dosyasına bakın.
+MIT License — see the `LICENSE` file for details.
