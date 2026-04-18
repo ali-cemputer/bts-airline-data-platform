@@ -451,22 +451,9 @@ The project was developed in 6 phases:
 - [ ] Unit tests — for Airflow DAGs and Spark transform
 - [ ] Migration to production-grade Spark cluster with GCP Dataproc
 
----
-
-## 14. DataTalks DE Zoomcamp Evaluation Criteria
-
-| Criterion | Score | How It's Met |
-|---|---|---|
-| Problem description | 4/4 | Project objectives, data source, and pipeline goals are clearly defined |
-| Cloud + IaC | 4/4 | GCP (GCS + BigQuery) provisioned with Terraform |
-| Batch pipeline / Orchestration | 4/4 | Airflow DAG with multiple tasks, data upload to data lake, monthly schedule + backfill |
-| Data Warehouse | 4/4 | BigQuery tables optimized with FlightDate partition + Airline/Origin cluster |
-| Transformations | 4/4 | PySpark (bronze→silver) and dbt Core (mart models) used |
-| Dashboard | 4/4 | Streamlit: categorical (delay cause) + temporal (monthly trend) tiles present |
-| Reproducibility | 4/4 | Setup steps, `.env.example`, docker-compose, `terraform.tfvars.example` all provided |
 
 ---
 
-## 15. License
+## 14. License
 
 MIT License — see the `LICENSE` file for details.
