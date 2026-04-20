@@ -17,7 +17,7 @@ PROJECT_ID = os.getenv("GCP_PROJECT_ID")
 credentials = service_account.Credentials.from_service_account_file(KEY_PATH)
 client = bigquery.Client(credentials=credentials, project=PROJECT_ID)
 
-DATASET = "bd-project-cemputer.bts_dbt"
+DATASET = f"{os.environ['GCP_PROJECT_ID']}.bts_dbt"
 
 # --- Data loading functions ---
 @st.cache_data(ttl=3600)

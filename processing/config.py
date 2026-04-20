@@ -1,9 +1,12 @@
+import os
+
+
 # ── GCP ───────────────────────────────────────────────────────────────────────
-GCP_PROJECT_ID       = "bd-project-cemputer"        # GCP project ID
-GCP_CREDENTIALS_PATH = "/opt/spark/keys/bd-project-cemputer-credentials.json"
+GCP_PROJECT_ID       = os.environ["GCP_PROJECT_ID"]        # GCP project ID
+GCP_CREDENTIALS_PATH = "/opt/spark/keys/" + os.environ["GCP_KEY_FILENAME"]
 
 # ── GCS ───────────────────────────────────────────────────────────────────────
-GCS_BUCKET    = "bts-airline-bronze"                # bucket name (gs://)
+GCS_BUCKET    = os.environ["GCS_BUCKET_NAME"]                # bucket name (gs://)
 
 BRONZE_PREFIX = "bronze/carrier_report"             # raw parquets prefix
 SILVER_PREFIX = "silver/carrier_report"             # cleaned parquet prefix
@@ -12,7 +15,7 @@ SILVER_PREFIX = "silver/carrier_report"             # cleaned parquet prefix
 BRONZE_READ_PATH = f"gs://{GCS_BUCKET}/{BRONZE_PREFIX}/year=*/month=*/data.parquet"
 
 # ── BigQuery ───────────────────────────────────────────────────────────────────
-BQ_DATASET   = "bts_airline"                        # BigQuery dataset name
+BQ_DATASET = os.environ["BQ_DATASET"]                        # BigQuery dataset name
 BQ_TABLE     = "carrier_performance"                # target table name
 BQ_TABLE_FULL = f"{GCP_PROJECT_ID}.{BQ_DATASET}.{BQ_TABLE}"
 

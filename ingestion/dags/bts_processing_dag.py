@@ -6,6 +6,8 @@ Reads bronze Parquet from GCS, writes silver Parquet, loads BigQuery.
 import subprocess
 from datetime import datetime
 
+import os
+
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 
@@ -17,7 +19,7 @@ def run_spark_transform(**context):
     cmd = [
         "docker", "run", "--rm",
         "--network", "docker_pipeline-net",
-        "-e", "GOOGLE_APPLICATION_CREDENTIALS=/opt/spark/keys/bd-project-cemputer-credentials.json",
+        "-e", "GOOGLE_APPLICATION_CREDENTIALS=/opt/spark/keys/{os.environ['GCP_KEY_FILENAME']}",
         "docker-spark",
         "/opt/spark/bin/spark-submit",
         "--master", "local[*]",

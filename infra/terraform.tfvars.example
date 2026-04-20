@@ -1,7 +1,6 @@
-project_id       = "your-gcp-project-id"
-region           = "EU"
-credentials_file = "/path/to/service-account-key.json"
-bucket_name      = "your-bucket-name"
-bq_dataset_id    = "your-dataset-id"
+project_id            = "your-gcp-project-id"
+region                = "EU"
+credentials_file      = "/absolute/path/to/your-key.json"
+bucket_name           = "your-bucket-name"
+bq_dataset_id         = "bts_airline"
 service_account_email = "your-sa@your-project.iam.gserviceaccount.com"
-
